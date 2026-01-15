@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Felixida 幸運轉盤 v7.8 (完美圓形修正版)</title>
+    <title>Felixida 幸運轉盤 v7.9 (終極穩定版)</title>
     <style>
         :root {
             --bg-gradient-start: #ff9966;
@@ -19,6 +19,7 @@
             font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
         }
 
+        /* Body 設定：電腦版不捲動，手機版可捲動 */
         body {
             margin: 0;
             background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
@@ -28,7 +29,7 @@
             min-height: 100vh;
             padding: 20px;
             color: var(--text-main);
-            overflow-x: hidden; 
+            overflow: hidden; /* 電腦版預設 */
         }
 
         .container {
@@ -38,12 +39,17 @@
             width: 100%;
             height: 90vh; 
             align-items: center;
+            justify-content: center;
         }
 
-        /* --- 左側：榮譽榜單 --- */
+        /* --- 左側：榮譽榜單 (電腦版) --- */
         .winners-panel {
-            flex: 1;
+            flex: 1; /* 佔用剩餘空間 */
+            /* 關鍵修正：限制寬度範圍，並不允許被壓縮 */
+            min-width: 300px;
             max-width: 350px;
+            flex-shrink: 0; 
+            
             height: 80%;
             background: var(--panel-bg);
             border: 4px solid var(--accent);
@@ -53,6 +59,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            z-index: 10;
         }
 
         .panel-header {
@@ -62,12 +69,7 @@
             margin-bottom: 15px;
         }
 
-        .panel-header h2 {
-            margin: 0;
-            color: #b3541e;
-            font-size: 1.8rem;
-            text-shadow: 1px 1px 0px rgba(255, 215, 0, 0.5);
-        }
+        .panel-header h2 { margin: 0; color: #b3541e; font-size: 1.8rem; text-shadow: 1px 1px 0px rgba(255, 215, 0, 0.5); }
 
         .winner-list-container {
             flex: 1;
@@ -75,46 +77,38 @@
             padding-right: 5px;
             -webkit-overflow-scrolling: touch; 
         }
-
         .winner-list-container::-webkit-scrollbar { width: 6px; }
         .winner-list-container::-webkit-scrollbar-thumb { background-color: var(--accent); border-radius: 3px; }
 
         .winner-item {
-            background: white;
-            border-left: 5px solid var(--primary);
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: slideIn 0.5s ease-out;
+            background: white; border-left: 5px solid var(--primary); padding: 10px 15px;
+            margin-bottom: 10px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.5s ease-out;
         }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
         .w-name { font-weight: bold; font-size: 1.1rem; color: #333; }
         .w-prize { font-size: 0.9rem; color: #666; }
 
-        /* --- 右側：轉盤區 --- */
+        /* --- 右側：轉盤區 (電腦版) --- */
         .wheel-section {
+            /* 關鍵修正：讓轉盤區塊佔用主要空間，但不超過版面 */
             flex: 2;
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
+            height: 100%; /* 填滿容器高度 */
+            overflow: visible; /* 允許指針凸出去 */
         }
 
         .wheel-border {
             position: relative;
-            width: 90%;
-            max-width: 600px;
-            /* 核心修正：強制外框為正方形比例 */
-            aspect-ratio: 1 / 1; 
+            /* 關鍵修正：電腦版以「高度」為基準，確保不會過寬 */
+            height: 80vh; 
+            width: 80vh;  /* 強制寬度等於高度 */
+            max-width: 600px; /* 限制最大尺寸 */
+            max-height: 600px;
+            
             border-radius: 50%;
             padding: 15px;
             background: conic-gradient(#ff9f43, #ee5253, #ff9f43, #ee5253, #ff9f43);
@@ -123,217 +117,130 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-shrink: 0; 
+            flex-shrink: 0; /* 禁止被壓縮，保持正圓 */
         }
 
         .wheel-container {
             width: 100%;
             height: 100%;
-            /* 核心修正：確保內部容器也繼承正方形比例 */
-            aspect-ratio: 1 / 1;
             border-radius: 50%;
             background: white;
             position: relative;
             overflow: hidden;
             border: 5px solid white;
-            /* 核心修正：將旋轉過渡效果移到這裡，而不是 canvas */
+            /* 旋轉動畫應用於此 */
             transition: transform 0s cubic-bezier(0.25, 0.1, 0.25, 1);
-            /* 效能優化提示 */
             will-change: transform;
         }
 
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            /* 移除這裡的 transition */
-        }
+        canvas { width: 100%; height: 100%; display: block; }
 
         .pointer {
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 50px;
-            height: 60px;
-            z-index: 20;
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            width: 50px; height: 60px; z-index: 20;
             filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
         }
-
         .pointer::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #d63031;
-            clip-path: polygon(50% 100%, 0 0, 100% 0);
-            border-top: 5px solid #b71c1c;
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #d63031; clip-path: polygon(50% 100%, 0 0, 100% 0); border-top: 5px solid #b71c1c;
         }
 
-        /* 中間 Logo 按鈕 */
+        /* 中間按鈕 */
         .center-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 20%; 
-            height: 20%;
-            background: white;
-            border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 20%; height: 20%; background: white; border-radius: 50%;
             box-shadow: 0 0 0 8px rgba(255,255,255,0.5), 0 10px 20px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 15;
-            cursor: pointer;
-            overflow: hidden;
-            border: 2px solid #eee;
-            transition: transform 0.1s;
+            display: flex; align-items: center; justify-content: center; z-index: 15;
+            cursor: pointer; overflow: hidden; border: 2px solid #eee; transition: transform 0.1s;
         }
         .center-btn:active { transform: translate(-50%, -50%) scale(0.95); }
+        .center-logo { width: 90%; height: auto; object-fit: contain; }
 
-        .center-logo {
-            width: 90%;
-            height: auto;
-            object-fit: contain;
-        }
-
-        /* --- 右上角設定按鈕 --- */
+        /* 設定按鈕 */
         .settings-fab {
-            position: fixed;
-            top: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            cursor: pointer;
-            z-index: 90;
-            transition: transform 0.3s;
+            position: fixed; top: 30px; right: 30px; width: 60px; height: 60px;
+            background: white; border-radius: 50%; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center; font-size: 30px;
+            cursor: pointer; z-index: 90; transition: transform 0.3s;
         }
         .settings-fab:hover { transform: rotate(90deg); }
 
-        /* --- 彈出視窗 --- */
+        /* 彈窗樣式 */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-
         .modal-content {
-            background: white; padding: 30px; border-radius: 15px;
-            width: 90%; max-width: 500px; text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transform: scale(0.8);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .modal-overlay.active .modal-content { transform: scale(1); }
-
+        
         /* 結果視窗放大 */
-        #resultModal.active .modal-content {
-            transform: scale(2) !important; 
-            max-width: 400px; 
-        }
-        @media (max-width: 600px) {
-            #resultModal.active .modal-content {
-                transform: scale(1.5) !important; 
-            }
-        }
+        #resultModal.active .modal-content { transform: scale(2) !important; max-width: 400px; }
+        @media (max-width: 600px) { #resultModal.active .modal-content { transform: scale(1.5) !important; } }
 
         /* 預告視窗 */
-        .modal-flashy {
-            background: #ffffff; border: 6px solid var(--accent); color: var(--text-main);
-            max-width: 600px; width: 95%; padding: 50px 30px;
-        }
-        .modal-flashy h2 {
-            font-size: 2.5rem; text-shadow: none; color: var(--primary); margin-bottom: 20px;
-        }
-        .announce-prize-name {
-            font-size: 4rem; font-weight: 900; color: #b3541e;
-            text-shadow: none; margin: 30px 0 50px 0; line-height: 1.2;
-            border-bottom: 2px dashed #eee; padding-bottom: 20px;
-        }
-        .btn-large {
-            padding: 15px 50px; font-size: 1.5rem; border-radius: 50px;
-            background: var(--primary); color: white; border: none;
-            box-shadow: 0 8px 20px rgba(230, 81, 0, 0.3); transition: all 0.3s;
-        }
+        .modal-flashy { background: #ffffff; border: 6px solid var(--accent); color: var(--text-main); max-width: 600px; width: 95%; padding: 50px 30px; }
+        .modal-flashy h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 20px; }
+        .announce-prize-name { font-size: 4rem; font-weight: 900; color: #b3541e; margin: 30px 0 50px 0; line-height: 1.2; border-bottom: 2px dashed #eee; padding-bottom: 20px; }
+        .btn-large { padding: 15px 50px; font-size: 1.5rem; border-radius: 50px; background: var(--primary); color: white; border: none; box-shadow: 0 8px 20px rgba(230, 81, 0, 0.3); transition: all 0.3s; }
         .btn-large:hover { transform: scale(1.05); background: #ef6c00; }
         .animate-pulse { animation: pulse 1.5s infinite; }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(230, 81, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0); }
-        }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(230, 81, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0); } }
 
-        /* 設定視窗元件 */
+        /* 設定視窗 */
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-        textarea {
-            width: 100%; height: 100px; padding: 10px;
-            border: 1px solid #ddd; border-radius: 8px; resize: vertical;
-        }
+        textarea { width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; resize: vertical; }
         .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-        button {
-            padding: 10px 20px; border: none; border-radius: 8px;
-            cursor: pointer; font-weight: bold; font-size: 1rem;
-        }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-secondary { background: #eee; color: #333; }
-
         .winner-name { font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
         .prize-display { font-size: 1.2rem; color: #b3541e; font-weight: bold; margin-bottom: 20px; }
 
-        /* --- 手機版 RWD 調整 --- */
+        /* --- ⚠️ 關鍵修正區：手機版 (RWD) --- */
         @media (max-width: 850px) {
             body {
-                display: block; 
-                height: auto; 
+                /* 手機版允許捲動，內容從上排到下 */
                 overflow-y: auto; 
+                display: block; 
+                height: auto;
                 padding-top: 20px;
                 padding-bottom: 50px;
             }
             .container {
                 display: flex;
-                flex-direction: column; 
-                height: auto; 
+                flex-direction: column; /* 垂直排列 */
+                height: auto;
                 gap: 30px;
             }
             .wheel-section {
-                order: 1; 
+                order: 1; /* 轉盤在最上面 */
                 width: 100%;
-                margin-top: 20px;
-                flex: none;
+                height: auto;
+                margin-top: 10px;
+                flex: none; /* 關閉彈性 */
             }
             .wheel-border {
+                /* 手機版：寬度佔滿 90%，並強制 1:1 */
                 width: 90vw;
-                max-width: 400px; 
-                /* 再次確保手機版也是 1:1 */
-                aspect-ratio: 1 / 1; 
-                height: auto;
-                margin: 0 auto; 
+                height: 90vw; /* 這裡強制高度=寬度，解決變扁問題 */
+                max-width: 380px; 
+                max-height: 380px;
+                margin: 0 auto;
+                flex-shrink: 0;
             }
             .winners-panel {
-                order: 2;
-                width: 95%; 
+                order: 2; /* 榜單在下面 */
+                width: 90%; 
                 max-width: 100%; 
-                height: 300px; 
+                height: 400px; /* 給予固定高度，確保內部可捲動 */
                 flex: none;
                 margin: 0 auto;
             }
@@ -419,9 +326,7 @@ Amy</textarea>
 </div>
 
 <script>
-    // 變數
     const canvas = document.getElementById('wheelCanvas');
-    // 核心修正：獲取要旋轉的容器
     const wheelContainer = document.querySelector('.wheel-container');
     const ctx = canvas.getContext('2d');
     const namesInput = document.getElementById('namesInput');
@@ -434,22 +339,16 @@ Amy</textarea>
     let currentRotation = 0; 
     let spinVelocity = 0;
     
-    // 顏色庫
     const palette = ['#e65100', '#ffb74d', '#ffffff', '#ffcc80', '#ffe0b2', '#f57c00'];
     let segmentColors = [];
 
-    // 音效系統
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
     const SoundEffect = {
         init: function() {
-            if (!audioCtx) {
-                audioCtx = new AudioContext();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!audioCtx) { audioCtx = new AudioContext(); }
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
         },
         playWin: function() {
             if (!audioCtx) return;
@@ -471,25 +370,18 @@ Amy</textarea>
         }
     };
 
-    window.onload = () => {
-        updateData();
-    };
+    window.onload = () => { updateData(); };
 
     function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
-    function closeSettings() { 
-        document.getElementById('settingsModal').classList.remove('active'); 
-        updateData(); 
-    }
+    function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); updateData(); }
 
     function updateData() {
         names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== '');
         prizes = prizesInput.value.split('\n').map(p => p.trim()).filter(p => p !== '');
         document.getElementById('countNames').innerText = names.length;
         document.getElementById('countPrizes').innerText = prizes.length;
-        
         generateSafeColors();
         currentRotation = 0;
-        // 核心修正：重置容器的旋轉角度
         wheelContainer.style.transform = `rotate(0deg)`;
         drawWheel(); 
     }
@@ -509,11 +401,7 @@ Amy</textarea>
         }
     }
 
-    function resetData() {
-        if(confirm("確定重置？")) {
-            location.reload(); 
-        }
-    }
+    function resetData() { if(confirm("確定重置？")) { location.reload(); } }
 
     function drawWheel() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -522,12 +410,9 @@ Amy</textarea>
         const radius = cx - 10;
         
         if (names.length === 0) {
-            ctx.font = "bold 40px Arial";
-            ctx.fillStyle = "#888";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("請輸入名單", cx, cy);
-            return;
+            ctx.font = "bold 40px Arial"; ctx.fillStyle = "#888";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText("請輸入名單", cx, cy); return;
         }
 
         arc = Math.PI * 2 / names.length;
@@ -550,18 +435,10 @@ Amy</textarea>
             
             const isLight = (currentColor === '#ffffff' || currentColor === '#ffb74d' || currentColor === '#ffcc80' || currentColor === '#ffe0b2');
             ctx.fillStyle = isLight ? "#e65100" : "#ffffff";
-            
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle"; 
-            
+            ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
             let fontSize = names.length > 20 ? 24 : 36;
             ctx.font = `bold ${fontSize}px "Microsoft JhengHei"`;
-            
-            if(!isLight) {
-                ctx.shadowColor = "rgba(0,0,0,0.5)";
-                ctx.shadowBlur = 4;
-            }
-
+            if(!isLight) { ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 4; }
             ctx.fillText(names[i], 0, -radius * 0.75);
             ctx.restore();
         }
@@ -590,17 +467,10 @@ Amy</textarea>
     }
 
     function rotateWheelLoop() {
-        spinVelocityNum *= 0.985; // 摩擦係數
-
-        if (spinVelocityNum < 0.1) {
-            stopRotateWheel();
-            return;
-        }
-
+        spinVelocityNum *= 0.985; 
+        if (spinVelocityNum < 0.1) { stopRotateWheel(); return; }
         currentRotation += spinVelocityNum;
-        // 核心修正：旋轉容器，而不是 canvas
         wheelContainer.style.transform = `rotate(${currentRotation}deg)`;
-
         animationFrameId = requestAnimationFrame(rotateWheelLoop);
     }
 
@@ -629,23 +499,21 @@ Amy</textarea>
         namesInput.value = names.join('\n');
     }
 
-    const resultModal = document.getElementById('resultModal');
     function showResult(name, prize) {
         document.getElementById('modalWinner').innerText = name;
         document.getElementById('modalPrize').innerText = prize;
-        resultModal.classList.add('active');
+        document.getElementById('resultModal').classList.add('active');
         
         const div = document.createElement('div');
         div.className = 'winner-item';
         div.innerHTML = `<span class="w-name">${name}</span><span class="w-prize">${prize}</span>`;
         const list = document.getElementById('historyList');
         list.insertBefore(div, list.firstChild);
-        
         createConfetti();
     }
 
     function closeResultModal() {
-        resultModal.classList.remove('active');
+        document.getElementById('resultModal').classList.remove('active');
         updateData(); 
     }
 
@@ -666,14 +534,12 @@ Amy</textarea>
                 transition: top ${duration} ease-out, left ${duration} ease-in-out, opacity ${duration} ease-in, transform ${duration} linear;
             `;
             document.body.appendChild(confetti);
-
             setTimeout(() => {
                 confetti.style.top = '110vh';
                 confetti.style.left = endLeft;
                 confetti.style.opacity = '0';
                 confetti.style.transform = `rotate(${Math.random()*720}deg)`;
             }, 50);
-
             setTimeout(() => confetti.remove(), 3000);
         }
     }
