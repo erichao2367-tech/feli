@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Felixida 幸運轉盤 v7.7 (完美比例修復版)</title>
+    <title>Felixida 幸運轉盤 v7.8 (完美圓形修正版)</title>
     <style>
         :root {
             --bg-gradient-start: #ff9966;
@@ -113,7 +113,7 @@
             position: relative;
             width: 90%;
             max-width: 600px;
-            /* 關鍵修復：強制 1:1 比例 */
+            /* 核心修正：強制外框為正方形比例 */
             aspect-ratio: 1 / 1; 
             border-radius: 50%;
             padding: 15px;
@@ -123,26 +123,30 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 關鍵修復：防止被擠壓 */
             flex-shrink: 0; 
         }
 
         .wheel-container {
             width: 100%;
             height: 100%;
+            /* 核心修正：確保內部容器也繼承正方形比例 */
+            aspect-ratio: 1 / 1;
             border-radius: 50%;
             background: white;
             position: relative;
             overflow: hidden;
             border: 5px solid white;
-            transform: translateZ(0); 
+            /* 核心修正：將旋轉過渡效果移到這裡，而不是 canvas */
+            transition: transform 0s cubic-bezier(0.25, 0.1, 0.25, 1);
+            /* 效能優化提示 */
+            will-change: transform;
         }
 
         canvas {
             width: 100%;
             height: 100%;
             display: block;
-            transition: transform 0s cubic-bezier(0.25, 0.1, 0.25, 1);
+            /* 移除這裡的 transition */
         }
 
         .pointer {
@@ -296,10 +300,9 @@
         .winner-name { font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
         .prize-display { font-size: 1.2rem; color: #b3541e; font-weight: bold; margin-bottom: 20px; }
 
-        /* --- 手機版 RWD 調整 (重點修正區) --- */
+        /* --- 手機版 RWD 調整 --- */
         @media (max-width: 850px) {
             body {
-                /* 讓手機版內容自然從上往下排，且可以捲動 */
                 display: block; 
                 height: auto; 
                 overflow-y: auto; 
@@ -308,31 +311,31 @@
             }
             .container {
                 display: flex;
-                flex-direction: column; /* 垂直排列 */
+                flex-direction: column; 
                 height: auto; 
                 gap: 30px;
             }
             .wheel-section {
-                order: 1; /* 轉盤在上面 */
+                order: 1; 
                 width: 100%;
                 margin-top: 20px;
-                flex: none; /* 關閉彈性伸縮 */
+                flex: none;
             }
             .wheel-border {
-                /* 手機版：寬度 90%，但限制最大 400px，確保它是正圓 */
                 width: 90vw;
                 max-width: 400px; 
+                /* 再次確保手機版也是 1:1 */
                 aspect-ratio: 1 / 1; 
                 height: auto;
-                margin: 0 auto; /* 置中 */
+                margin: 0 auto; 
             }
             .winners-panel {
-                order: 2; /* 榜單在下面 */
+                order: 2;
                 width: 95%; 
                 max-width: 100%; 
-                height: 300px; /* 給定高度讓它可以捲動 */
+                height: 300px; 
                 flex: none;
-                margin: 0 auto; /* 置中 */
+                margin: 0 auto;
             }
             .announce-prize-name { font-size: 3rem; }
             .settings-fab { top: 15px; right: 15px; width: 50px; height: 50px; font-size: 24px; }
@@ -418,6 +421,8 @@ Amy</textarea>
 <script>
     // 變數
     const canvas = document.getElementById('wheelCanvas');
+    // 核心修正：獲取要旋轉的容器
+    const wheelContainer = document.querySelector('.wheel-container');
     const ctx = canvas.getContext('2d');
     const namesInput = document.getElementById('namesInput');
     const prizesInput = document.getElementById('prizesInput');
@@ -484,7 +489,8 @@ Amy</textarea>
         
         generateSafeColors();
         currentRotation = 0;
-        canvas.style.transform = `rotate(0deg)`;
+        // 核心修正：重置容器的旋轉角度
+        wheelContainer.style.transform = `rotate(0deg)`;
         drawWheel(); 
     }
     
@@ -592,7 +598,8 @@ Amy</textarea>
         }
 
         currentRotation += spinVelocityNum;
-        canvas.style.transform = `rotate(${currentRotation}deg)`;
+        // 核心修正：旋轉容器，而不是 canvas
+        wheelContainer.style.transform = `rotate(${currentRotation}deg)`;
 
         animationFrameId = requestAnimationFrame(rotateWheelLoop);
     }
